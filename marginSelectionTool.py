@@ -1,8 +1,7 @@
-from mojo.events import installTool, EditingTool
+from mojo.events import BaseEventTool, addObserver, removeObserver, extractNSEvent
+
 from lib.tools.defaults import getDefault, getDefaultColor
-from drawBot import linearGradient
 from mojo.drawingTools import *
-from AppKit import NSImage
 from os import path
 
 '''
@@ -12,50 +11,55 @@ Click on the sidebearing and move it with the mouse or arrows!
 Ryan Bugden
 with thanks to Erik van Blokland and Frederik Berlaen
 
+v0.1.5:   2019.12.20
 v0.1.1:   2019.04.10
 v0.1.0:   2019.03.07
 '''
 
-dirname = path.dirname(__file__)
-toolbarIcon = NSImage.alloc().initByReferencingFile_(path.join(dirname, "MarginSelectionToolIcon.pdf"))
-
-class MarginSelectionTool(EditingTool):
+class marginSelectionTool():
     
-    def setup(self):
+    def __init__(self):
         print('setting up Margin Selection')
         col = getDefaultColor("glyphViewSelectionColor")
+        
         self.sel_color = (col.redComponent(), col.greenComponent(), col.blueComponent(), col.alphaComponent())
         self.RSBselected = False
         self.LSBselected = False
-        self.font = CurrentFont()
-        self.glyph = CurrentGlyph()
+        
+        self.font = None
+        self.glyph = None
         self.position = None
+        
+        self.sel_points = []
+        
         self.sensitivity = 6
         self.stroke_width = 1
         self.increment = 1
         self.shift_inc = getDefault("glyphViewShiftIncrement")
         self.shift_command_inc = getDefault("glyphViewCommandShiftIncrement")
         
-        # print('Getting those observers ready.')
-        # # Get ready for some observers
-        # addObserver(self, 'mouseDragged', 'mouseDragged')
-        # addObserver(self, 'mouseUp', 'mouseUp')
-        # addObserver(self, 'mouseDown', 'mouseDown')
-        # addObserver(self, 'keyDown', 'keyDown')
-        # addObserver(self, 'draw', 'draw')
-        # print('Observers ready.')
-    
-    def getToolbarIcon(self):
-        return(toolbarIcon)
+        self.leftDown = False
+        self.rightDown = False
+        self.shiftDown = 0
+        self.commandDown = 0
         
-    def getToolbarTip(self):
-        return "Margin Selection"
+        print('Preparing observers.')
+        # Get ready for some observers
+        addObserver(self, 'mouseDragged', 'mouseDragged')
+        addObserver(self, 'mouseUp', 'mouseUp') 
+        addObserver(self, 'mouseDown', 'mouseDown')
+        addObserver(self, 'keyDown', 'keyDown')
+        addObserver(self, 'modifiersChanged', 'modifiersChanged')
+        addObserver(self, 'draw', 'draw')
+        print('Observers ready.')
 
-    def mouseDragged(self, point, delta):
+    def mouseDragged(self, notification):
+        print(notification)
         print("Mouse dragged.")
-        self.position = point
-        self.deltaX = delta.x
-        self.newDeltaX = delta.x - self.deltaX
+        self.glyph = notification['glyph']
+        self.position = notification['point']
+        self.deltaX = notification['delta'].x
+        self.newDeltaX = notification['delta'].x - self.deltaX
         if self.RSBselected == True:
             print(self.deltaX)
             self.glyph.rightMargin += self.newDeltaX
@@ -65,102 +69,113 @@ class MarginSelectionTool(EditingTool):
             self.glyph.leftMargin -= self.newDeltaX
             self.glyph.update()
             
-    def mouseUp(self, point):
+    def mouseUp(self, notification):
+        print(notification)
         print("Mouse up.")
         self.position = None
 
-    def mouseDown(self, point, clickCount):
-        #should i make an invisible bezier path around the point, and do a pointinside, to compensate for the 10 uncertainty?
-        self.sel_points = []
+    def mouseDown(self, notification):
+        print(notification)
+        self.glyph = notification['glyph']
         
         print("Mouse Down.")
+        point = notification['point']
         self.position = point
         self.position_tup = (int(point.x), int(point.y))
         print(self.position_tup)
         
+        if self.glyph != None:
+            if self.glyph.width - self.sensitivity < self.position_tup[0] < self.glyph.width + self.sensitivity:
+                print(self.position_tup[0], "Drawing right line")
+                print("RSB is selected") 
+                self.RSBselected = True
+                self.LSBselected = False
+                print("RSB selected reading as...", self.RSBselected)
         
-        if self.glyph.width - self.sensitivity < self.position[0] < self.glyph.width + self.sensitivity:
-            print(self.position[0], "Drawing right line")
-            print("RSB is selected") 
-            self.RSBselected = True
-            self.LSBselected = False
-            print("RSB selected reading as...", self.RSBselected)
+            elif 0 - self.sensitivity < self.position[0] < 0 + self.sensitivity:
+                print(self.position[0], "Drawing left line")
+                print(True) 
+                self.LSBselected = True
+                self.RSBselected = False
+            
+            elif self.position_tup in self.sel_points:
+                pass
+            
+            elif self.shiftDown != 0 or self.commandDown != 0:
+                pass
+            
+            # elif self.alsoGrabbedPoints()[0], self.alsoGrabbedPoints()[1] - 2 >self.position.x, self.position.y < self.alsoGrabbedPoints()[0], self.alsoGrabbedPoints()[1] + 2:
+            #     print("also grabbed points")
+            #     self.LSBselected = self.LSBselected
+            #     self.RSBselected = self.RSBselected
+            
+            # elif self.position == (self.glyph.point.x, self.glyph.points.y):
+            #     pass
+            
+            else:
+                self.LSBselected = False
+                self.RSBselected = False
         
-        elif 0 - self.sensitivity < self.position[0] < 0 + self.sensitivity:
-            print(self.position[0], "Drawing left line")
-            print(True) 
-            self.LSBselected = True
-            self.RSBselected = False
-            
-        elif self.position_tup in self.sel_points:
-            pass
-            
-        elif self.shiftDown == True or self.commandDown == True:
-            pass
-            
-        # elif self.alsoGrabbedPoints()[0], self.alsoGrabbedPoints()[1] - 2 >self.position.x, self.position.y < self.alsoGrabbedPoints()[0], self.alsoGrabbedPoints()[1] + 2:
-        #     print("also grabbed points")
-        #     self.LSBselected = self.LSBselected
-        #     self.RSBselected = self.RSBselected
-            
-        # elif self.position == (self.glyph.point.x, self.glyph.points.y):
-        #     pass
-            
-        else:
-            self.LSBselected = False
-            self.RSBselected = False
-            
-        
-        for point in self.glyph.selectedPoints:
-            self.sel_points.append((point.x , point.y))
-        print(self.sel_points)
-        # for (x, y) in self.sel_points:
-        #     print(y)
-        # selection_threshold = 10
+            for point in self.glyph.selectedPoints:
+                self.sel_points.append((point.x , point.y))
+            print(self.sel_points)
+            # for (x, y) in self.sel_points:
+            #     print(y)
+            # selection_threshold = 10
 
-    def currentGlyphChanged(self):
-        self.font = CurrentFont()
-        self.glyph = CurrentGlyph()
+    def currentGlyphChanged(self, notification):
+        self.glyph = notification['glyph']
+        self.font = self.glyph.font
 
-    
     def keyDown(self, event):
+        print(event)
+        ns_event = extractNSEvent(event)
+        self.leftDown = ns_event['left']
+        self.rightDown = ns_event['right']
         print("Keys Down.")
-        print(self.arrowKeysDown)
         print("KEY RSB selected reading as...", self.RSBselected) 
         
         if self.RSBselected == True:
-            if self.arrowKeysDown['left'] == True:
-                if self.shiftDown == self.commandDown == True:
+            if self.leftDown == True:
+                if self.shiftDown != 0 and self.commandDown != 0:
                     self.glyph.rightMargin -= self.shift_command_inc
-                elif self.shiftDown == True:
+                elif self.shiftDown != 0:
                     self.glyph.rightMargin -= self.shift_inc
                 else:
                     self.glyph.rightMargin -= self.increment
-            if self.arrowKeysDown['right'] == True:
-                if self.shiftDown == self.commandDown == True:
+            if self.rightDown == True:
+                if self.shiftDown != 0 and self.commandDown != 0:
                     self.glyph.rightMargin += self.shift_command_inc
-                elif self.shiftDown == True:
+                elif self.shiftDown != 0:
                     self.glyph.rightMargin += self.shift_inc
                 else:
                     self.glyph.rightMargin += self.increment
                     
         if self.LSBselected == True:
-            if self.arrowKeysDown['left'] == True:
-                if self.shiftDown == self.commandDown == True:
+            if self.leftDown == True:
+                if self.shiftDown != 0 and self.commandDown != 0:
                     self.glyph.leftMargin += self.shift_command_inc
-                elif self.shiftDown == True:
+                elif self.shiftDown != 0:
                     self.glyph.leftMargin += self.shift_inc
                 else:
                     self.glyph.leftMargin += self.increment
-            if self.arrowKeysDown['right'] == True:
-                if self.shiftDown == self.commandDown == True:
+            if self.rightDown == True:
+                if self.shiftDown != 0 and self.commandDown != 0:
                     self.glyph.leftMargin -= self.shift_command_inc
-                elif self.shiftDown == True:
+                elif self.shiftDown != 0:
                     self.glyph.leftMargin -= self.shift_inc
                 else:
                     self.glyph.leftMargin -= self.increment
+                
+    def modifiersChanged(self, event):
+        ns_event = extractNSEvent(event)
+        print(ns_event)
+        self.shiftDown = ns_event['shiftDown']
+        self.commandDown = ns_event['commandDown']
                     
     def draw(self, scale):
+        self.glyph = CurrentGlyph()
+        self.font = self.glyph.font
         strokeWidth(self.stroke_width)
         stroke(*self.sel_color)
         if self.RSBselected == True:   
@@ -181,6 +196,5 @@ class MarginSelectionTool(EditingTool):
                         return p.x, p.y
             
         
-        
-installTool(MarginSelectionTool())
+marginSelectionTool()
 

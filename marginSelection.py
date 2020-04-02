@@ -75,7 +75,7 @@ class MarginSelector():
             self.mouseDelta = notification['point']
             newDeltaX = notification['delta'].x - self.deltaX
             self.deltaX = notification['delta'].x
-            if self.glyph.selectedPoints != () and not self.shiftDown:
+            if self.glyph.selectedPoints != ():
                 if self.rightMarginIsSelected:
                     self.moveMargin(newDeltaX)
                 if self.leftMarginIsSelected:

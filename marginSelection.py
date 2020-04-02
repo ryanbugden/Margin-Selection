@@ -34,7 +34,7 @@ class MarginSelector():
         self.deltaX = 0
         self.threshold = 5
         self.increment = 1
-        self.stroke_width = 2
+        self.stroke_width = 1
         self.glyphViewShiftIncrement = getDefault("glyphViewShiftIncrement")
         self.glyphViewCommandShiftIncrement = getDefault("glyphViewCommandShiftIncrement")
         self.shiftDown = False

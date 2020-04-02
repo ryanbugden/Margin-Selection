@@ -9,6 +9,8 @@ with thanks to Erik van Blokland and Frederik Berlaen.
 * Clicking on points and a SB + dragging isn't fully solved yet. If you then click and drag mouse from the SB after making the selection, the points of deselected. If you click and drag from points, it works, but holding down `Shift` (to keep things from moving vertically) will kill the action.
 * Selecting the sidebearing by means of marqueeing over it seems a bit too invasive, as one may want to marquee over just points, and many people are loose with their marquees! Also, points may be beyond SB. Perhaps margin should only be able to be selected if clicked directly, as the user should be sure what they're about to do.
 * Margin selection line thickness seems to be too thick when zoomed in. Should double-check `notification['scale']` or something of the like.
+* Should this be a start-up script (makes most sense) or extension (more people will find it)?
+* No debug window in final version.
 
 
 

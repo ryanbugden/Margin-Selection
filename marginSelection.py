@@ -1,6 +1,7 @@
 from defconAppKit.windows.baseWindow import BaseWindowController
 from mojo.events import addObserver, removeObserver, extractNSEvent, getActiveEventTool
 from lib.tools.defaults import getDefault, getDefaultColor
+from lib.tools.misc import NSColorToRgba
 from mojo.drawingTools import *
 
 '''
@@ -23,9 +24,7 @@ ACTIVE_TOOLS = ('EditingTool', 'ScalingEditTool')  # works only while these tool
 class MarginSelector():
 
     def __init__(self):
-        col = getDefaultColor("glyphViewSelectionColor")
-        self.glyphViewSelectionColor = (col.redComponent(), col.greenComponent(),
-                          col.blueComponent(), col.alphaComponent())
+        self.glyphViewSelectionColor = NSColorToRgba(getDefaultColor("glyphViewSelectionColor"))
         self.rightMarginIsSelected = False
         self.leftMarginIsSelected = False
         self.glyph = None

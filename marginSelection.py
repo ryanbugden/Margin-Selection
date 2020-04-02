@@ -34,6 +34,7 @@ class MarginSelector():
         self.deltaX = 0
         self.threshold = 5
         self.increment = 1
+        self.stroke_width = 2
         self.glyphViewShiftIncrement = getDefault("glyphViewShiftIncrement")
         self.glyphViewCommandShiftIncrement = getDefault("glyphViewCommandShiftIncrement")
         self.shiftDown = False
@@ -139,9 +140,9 @@ class MarginSelector():
         self.shiftDown = ns_event['shiftDown']
         self.commandDown = ns_event['commandDown']
 
-    def draw(self, scale):
+    def draw(self, notification):
         if self.isValid:
-            strokeWidth(self.threshold)
+            strokeWidth(self.stroke_width*notification['scale'])
             stroke(*self.glyphViewSelectionColor)
             if self.rightMarginIsSelected:
                 line((self.glyph.width, self.font.info.descender),
